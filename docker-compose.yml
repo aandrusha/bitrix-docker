@@ -1,0 +1,85 @@
+networks:
+  bitrix:
+    driver: bridge
+
+services:
+
+  mailhog:
+    image: 'mailhog/mailhog:latest'
+    container_name: bitrix-mailhog
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
+    ports:
+      - '49001:8025'
+    networks:
+      bitrix:
+        aliases:
+          - mailhogcontainer  
+
+  mysql:
+    image: 'mysql:8'
+    container_name: bitrix-db
+    restart: unless-stopped
+    volumes:
+      - './db:/var/lib/mysql'
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
+    ports:
+      - '49002:3306'
+    networks:
+      bitrix:
+        aliases:
+          - mysqlcontainer
+
+  php-apache:
+    build: php-apache
+    container_name: bitrix-php-apache
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - './www:/var/www/html'
+      - './ssl/certs/bitrix.local-selfsigned.crt:/etc/ssl/certs/bitrix.local-selfsigned.crt'
+      - './ssl/private/bitrix.local-selfsigned.key:/etc/ssl/private/bitrix.local-selfsigned.key'
+      - './php-apache/apache-bitrix.conf:/etc/apache2/sites-available/000-default.conf'
+      - './php-apache/php-bitrix-override.ini:/usr/local/etc/php/conf.d/override.ini'
+    environment:
+      TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
+    ports:
+      - '8090:8090'
+    networks:
+      bitrix:
+        aliases:
+          - httpd
+    user: ${UID}
+
+  nginx:
+    image: 'nginx:alpine'
+    container_name: bitrix-nginx
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - './www:/var/www/html'
+      - './ssl/certs/bitrix.local-selfsigned.crt:/etc/ssl/certs/bitrix.local-selfsigned.crt'
+      - './ssl/private/bitrix.local-selfsigned.key:/etc/ssl/private/bitrix.local-selfsigned.key'
+      - './nginx:/etc/nginx'
+    environment:
+      TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
+    ports:
+      - '80:80'
+      - '443:443'
+    networks:
+      - bitrix
+
