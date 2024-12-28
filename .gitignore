@@ -1,3 +1,6 @@
 db/*
+!db/.placeholder
 logs/*
+!logs/.placeholder
 www/bx-site/*
+!www/bx-site/.placeholder
